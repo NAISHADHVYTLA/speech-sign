@@ -11,7 +11,7 @@ export default function Index() {
 
         {/* Navbar */}
         <nav className="relative z-10 flex items-center justify-between px-8 py-5">
-          <span className="font-display font-bold text-xl text-primary glow-text">🤟 Sign Kit</span>
+          <span className="font-display font-bold text-xl text-primary glow-text">🤟 Sign Speech</span>
           <div className="flex items-center gap-6 text-sm font-medium">
             <Link to="/" className="text-foreground hover:text-primary transition">Home</Link>
             <Link to="/convert" className="text-muted-foreground hover:text-primary transition">Convert</Link>
@@ -21,7 +21,7 @@ export default function Index() {
         {/* Hero content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6">
           <h1 className="font-display text-5xl md:text-7xl font-bold text-foreground leading-tight mb-4">
-            Welcome to <span className="text-primary glow-text">Sign Kit</span>!
+            Welcome to <span className="text-primary glow-text">Sign Speech</span>!
           </h1>
           <div className="w-16 h-1 bg-primary rounded-full mb-6 animate-pulse-glow" />
           <p className="max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed mb-10">
@@ -77,7 +77,7 @@ export default function Index() {
 
       {/* Footer */}
       <footer className="glass-panel py-6 text-center text-sm text-muted-foreground">
-        <p>Sign Kit — ML-Enhanced Speech to Sign Language Converter</p>
+        <p>Sign Speech — ML-Enhanced Speech to Sign Language Converter</p>
       </footer>
     </div>
   );
