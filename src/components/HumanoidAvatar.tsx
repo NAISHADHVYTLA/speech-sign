@@ -25,19 +25,35 @@ function lerpEuler(
 
 function useSkinMaterial() {
   return useMemo(
-    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#f5c6a0'), roughness: 0.6, metalness: 0.05 }),
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color('#f5c6a0'),
+        roughness: 0.55,
+        metalness: 0.02,
+        clearcoat: 0.15,
+        clearcoatRoughness: 0.4,
+        sheen: 0.3,
+        sheenColor: new THREE.Color('#ffb088'),
+      }),
     []
   );
 }
 
 function useBodyMaterial(hex: string) {
   return useMemo(
-    () => new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.35, metalness: 0.3 }),
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(hex),
+        roughness: 0.3,
+        metalness: 0.25,
+        clearcoat: 0.1,
+        clearcoatRoughness: 0.6,
+      }),
     [hex]
   );
 }
 
-/* ===================== FINGER (individually animated) ===================== */
+/* ===================== FINGER ===================== */
 function Finger({
   position,
   curl,
@@ -45,7 +61,7 @@ function Finger({
   rotation,
 }: {
   position: [number, number, number];
-  curl: number; // 0 = open, 1 = fully closed
+  curl: number;
   length?: number;
   rotation?: [number, number, number];
 }) {
@@ -57,28 +73,23 @@ function Finger({
 
   useFrame(() => {
     if (seg1Ref.current) {
-      const target = -curl * 1.3;
-      seg1Ref.current.rotation.x = lerp(seg1Ref.current.rotation.x, target, 0.08);
+      seg1Ref.current.rotation.x = lerp(seg1Ref.current.rotation.x, -curl * 1.3, 0.08);
     }
     if (seg2Ref.current) {
-      const target = -curl * 0.9;
-      seg2Ref.current.rotation.x = lerp(seg2Ref.current.rotation.x, target, 0.08);
+      seg2Ref.current.rotation.x = lerp(seg2Ref.current.rotation.x, -curl * 0.9, 0.08);
     }
   });
 
   return (
     <group position={position} rotation={rotation || [0, 0, 0]}>
-      {/* First segment */}
       <group ref={seg1Ref}>
         <mesh material={skin} position={[0, -segLen / 2, 0]}>
-          <capsuleGeometry args={[0.01, segLen, 4, 8]} />
+          <capsuleGeometry args={[0.01, segLen, 6, 12]} />
         </mesh>
-        {/* Second segment (fingertip) */}
         <group position={[0, -segLen, 0]} ref={seg2Ref}>
           <mesh material={skin} position={[0, -segLen * 0.4, 0]}>
-            <capsuleGeometry args={[0.009, segLen * 0.7, 4, 8]} />
+            <capsuleGeometry args={[0.009, segLen * 0.7, 6, 12]} />
           </mesh>
-          {/* Fingernail */}
           <mesh position={[0, -segLen * 0.7, 0.008]}>
             <boxGeometry args={[0.012, 0.008, 0.003]} />
             <meshStandardMaterial color="#f0d0b8" roughness={0.3} />
@@ -104,7 +115,7 @@ function Thumb({ curl, side }: { curl: number; side: 'left' | 'right' }) {
   return (
     <group position={[xDir * -0.04, 0.005, 0.01]} ref={ref}>
       <mesh material={skin} position={[xDir * -0.01, -0.015, 0]}>
-        <capsuleGeometry args={[0.012, 0.03, 4, 8]} />
+        <capsuleGeometry args={[0.012, 0.03, 6, 12]} />
       </mesh>
     </group>
   );
@@ -123,19 +134,13 @@ function Hand({ fingers, side }: { fingers: FingerState; side: 'left' | 'right' 
 
   return (
     <group>
-      {/* Palm */}
       <mesh material={skin}>
         <boxGeometry args={[0.075, 0.04, 0.025]} />
       </mesh>
-      {/* Knuckle bumps */}
       <mesh material={skin} position={[0, -0.018, 0.005]}>
         <boxGeometry args={[0.065, 0.01, 0.02]} />
       </mesh>
-
-      {/* Thumb */}
       <Thumb curl={fingers.thumb} side={side} />
-
-      {/* Fingers */}
       {fingerData.map((f, i) => (
         <Finger key={i} position={f.pos} curl={f.curl} length={f.len} rotation={f.rot} />
       ))}
@@ -178,25 +183,25 @@ function Arm({
     <group position={[xOff, 0.55, 0]} ref={shoulderRef}>
       {/* Shoulder joint */}
       <mesh material={bodyMat}>
-        <sphereGeometry args={[0.042, 10, 10]} />
+        <sphereGeometry args={[0.042, 16, 16]} />
       </mesh>
       {/* Upper arm */}
       <mesh material={bodyMat} position={[0, -0.12, 0]}>
-        <capsuleGeometry args={[0.038, 0.18, 6, 12]} />
+        <capsuleGeometry args={[0.038, 0.18, 8, 16]} />
       </mesh>
-      {/* Elbow joint */}
+      {/* Elbow */}
       <group position={[0, -0.25, 0]} ref={elbowRef}>
         <mesh material={skin}>
-          <sphereGeometry args={[0.033, 12, 12]} />
+          <sphereGeometry args={[0.033, 16, 16]} />
         </mesh>
         {/* Forearm */}
         <mesh material={skin} position={[0, -0.12, 0]}>
-          <capsuleGeometry args={[0.03, 0.18, 6, 12]} />
+          <capsuleGeometry args={[0.03, 0.18, 8, 16]} />
         </mesh>
         {/* Wrist */}
         <group position={[0, -0.25, 0]} ref={wristRef}>
           <mesh material={skin}>
-            <sphereGeometry args={[0.025, 8, 8]} />
+            <sphereGeometry args={[0.025, 12, 12]} />
           </mesh>
           <Hand fingers={fingers} side={side} />
         </group>
@@ -209,134 +214,157 @@ function Arm({
 function Head({ facial }: { facial: string }) {
   const skin = useSkinMaterial();
   const headRef = useRef<THREE.Group>(null!);
-  const blinkRef = useRef<THREE.Group>(null!);
-  const blinkRef2 = useRef<THREE.Group>(null!);
+  const leftEyelidRef = useRef<THREE.Group>(null!);
+  const rightEyelidRef = useRef<THREE.Group>(null!);
+  const leftBrowRef = useRef<THREE.Mesh>(null!);
+  const rightBrowRef = useRef<THREE.Mesh>(null!);
 
   useFrame(({ clock }) => {
     if (!headRef.current) return;
-    headRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.5) * 0.03;
-
-    // Blink animation
+    // Subtle idle head sway
     const t = clock.elapsedTime;
-    const blink = Math.abs(Math.sin(t * 0.3)) < 0.03 ? 0.001 : 1;
-    if (blinkRef.current) blinkRef.current.scale.y = blink;
-    if (blinkRef2.current) blinkRef2.current.scale.y = blink;
+    headRef.current.rotation.y = Math.sin(t * 0.5) * 0.03;
+    headRef.current.rotation.x = Math.sin(t * 0.35) * 0.01;
+
+    // Natural blink – close for ~150ms every 3-5s
+    const blinkCycle = t % 4;
+    const isBlinking = blinkCycle > 3.8 && blinkCycle < 3.95;
+    const eyelidScale = isBlinking ? 0.05 : 1;
+
+    if (leftEyelidRef.current) leftEyelidRef.current.scale.y = lerp(leftEyelidRef.current.scale.y, eyelidScale, 0.25);
+    if (rightEyelidRef.current) rightEyelidRef.current.scale.y = lerp(rightEyelidRef.current.scale.y, eyelidScale, 0.25);
+
+    // Eyebrow micro-animation
+    const browLift = Math.sin(t * 0.7) * 0.002;
+    if (leftBrowRef.current) leftBrowRef.current.position.y = 0.055 + browLift;
+    if (rightBrowRef.current) rightBrowRef.current.position.y = 0.055 + browLift;
   });
+
+  const eyeMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: 'white', roughness: 0.1, metalness: 0, clearcoat: 0.8 }), []);
+  const irisMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#3d6b5f', roughness: 0.2, metalness: 0.1, clearcoat: 0.6 }), []);
+  const pupilMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.3 }), []);
+  const lipMat = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#c08080', roughness: 0.35, clearcoat: 0.3 }), []);
 
   return (
     <group position={[0, 0.85, 0]} ref={headRef}>
-      {/* Head */}
+      {/* Head – smoother sphere */}
       <mesh material={skin}>
-        <sphereGeometry args={[0.14, 24, 24]} />
+        <sphereGeometry args={[0.14, 32, 32]} />
       </mesh>
 
       {/* Neck */}
       <mesh material={skin} position={[0, -0.14, 0]}>
-        <cylinderGeometry args={[0.04, 0.05, 0.06, 12]} />
+        <cylinderGeometry args={[0.04, 0.05, 0.06, 16]} />
       </mesh>
 
       {/* Hair */}
       <mesh position={[0, 0.05, 0]}>
-        <sphereGeometry args={[0.145, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
-        <meshStandardMaterial color="#2c1810" roughness={0.8} />
+        <sphereGeometry args={[0.146, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+        <meshPhysicalMaterial color="#2c1810" roughness={0.9} metalness={0} />
       </mesh>
 
-      {/* Left Eye */}
-      <group position={[-0.045, 0.02, 0.12]} ref={blinkRef}>
-        <mesh>
-          <sphereGeometry args={[0.025, 16, 16]} />
-          <meshStandardMaterial color="white" />
+      {/* ---- Left Eye ---- */}
+      <group position={[-0.045, 0.02, 0.12]} ref={leftEyelidRef}>
+        <mesh material={eyeMat}>
+          <sphereGeometry args={[0.025, 20, 20]} />
         </mesh>
-        <mesh position={[0, 0, 0.015]}>
-          <sphereGeometry args={[0.013, 12, 12]} />
-          <meshStandardMaterial color="#3d2b1f" />
+        <mesh material={irisMat} position={[0, 0, 0.015]}>
+          <sphereGeometry args={[0.013, 16, 16]} />
         </mesh>
-        <mesh position={[0, 0, 0.022]}>
-          <sphereGeometry args={[0.006, 8, 8]} />
-          <meshStandardMaterial color="#111" />
+        <mesh material={pupilMat} position={[0, 0, 0.022]}>
+          <sphereGeometry args={[0.006, 12, 12]} />
+        </mesh>
+        {/* Eye highlight */}
+        <mesh position={[0.004, 0.004, 0.025]}>
+          <sphereGeometry args={[0.003, 8, 8]} />
+          <meshBasicMaterial color="white" />
         </mesh>
       </group>
 
-      {/* Right Eye */}
-      <group position={[0.045, 0.02, 0.12]} ref={blinkRef2}>
-        <mesh>
-          <sphereGeometry args={[0.025, 16, 16]} />
-          <meshStandardMaterial color="white" />
+      {/* ---- Right Eye ---- */}
+      <group position={[0.045, 0.02, 0.12]} ref={rightEyelidRef}>
+        <mesh material={eyeMat}>
+          <sphereGeometry args={[0.025, 20, 20]} />
         </mesh>
-        <mesh position={[0, 0, 0.015]}>
-          <sphereGeometry args={[0.013, 12, 12]} />
-          <meshStandardMaterial color="#3d2b1f" />
+        <mesh material={irisMat} position={[0, 0, 0.015]}>
+          <sphereGeometry args={[0.013, 16, 16]} />
         </mesh>
-        <mesh position={[0, 0, 0.022]}>
-          <sphereGeometry args={[0.006, 8, 8]} />
-          <meshStandardMaterial color="#111" />
+        <mesh material={pupilMat} position={[0, 0, 0.022]}>
+          <sphereGeometry args={[0.006, 12, 12]} />
+        </mesh>
+        <mesh position={[0.004, 0.004, 0.025]}>
+          <sphereGeometry args={[0.003, 8, 8]} />
+          <meshBasicMaterial color="white" />
         </mesh>
       </group>
 
-      {/* Eyebrows */}
-      <mesh position={[-0.045, 0.055, 0.115]} rotation={[0, 0, facial === 'questioning' ? 0.25 : 0.1]}>
-        <boxGeometry args={[0.04, 0.006, 0.01]} />
+      {/* ---- Eyebrows ---- */}
+      <mesh ref={leftBrowRef} position={[-0.045, 0.055, 0.115]} rotation={[0, 0, facial === 'questioning' ? 0.3 : 0.1]}>
+        <capsuleGeometry args={[0.004, 0.03, 4, 8]} />
         <meshStandardMaterial color="#2c1810" />
       </mesh>
-      <mesh position={[0.045, 0.055, 0.115]} rotation={[0, 0, facial === 'questioning' ? -0.25 : -0.1]}>
-        <boxGeometry args={[0.04, 0.006, 0.01]} />
+      <mesh ref={rightBrowRef} position={[0.045, 0.055, 0.115]} rotation={[0, 0, facial === 'questioning' ? -0.3 : -0.1]}>
+        <capsuleGeometry args={[0.004, 0.03, 4, 8]} />
         <meshStandardMaterial color="#2c1810" />
       </mesh>
 
-      {/* Nose */}
-      <mesh position={[0, -0.02, 0.13]} rotation={[0.2, 0, 0]}>
-        <coneGeometry args={[0.014, 0.025, 8]} />
-        <meshStandardMaterial color="#e8b08a" roughness={0.6} />
+      {/* ---- Nose ---- */}
+      <mesh position={[0, -0.015, 0.135]} rotation={[0.3, 0, 0]}>
+        <sphereGeometry args={[0.016, 12, 12]} />
+        <meshPhysicalMaterial color="#e8b08a" roughness={0.5} clearcoat={0.1} />
       </mesh>
       {/* Nostrils */}
-      <mesh position={[-0.008, -0.035, 0.125]}>
-        <sphereGeometry args={[0.005, 6, 6]} />
+      <mesh position={[-0.008, -0.032, 0.125]}>
+        <sphereGeometry args={[0.005, 8, 8]} />
         <meshStandardMaterial color="#d4946e" />
       </mesh>
-      <mesh position={[0.008, -0.035, 0.125]}>
-        <sphereGeometry args={[0.005, 6, 6]} />
+      <mesh position={[0.008, -0.032, 0.125]}>
+        <sphereGeometry args={[0.005, 8, 8]} />
         <meshStandardMaterial color="#d4946e" />
       </mesh>
 
-      {/* Mouth */}
-      <mesh position={[0, -0.06, 0.12]} rotation={[0, 0, Math.PI / 2]}>
+      {/* ---- Mouth ---- */}
+      <mesh position={[0, -0.058, 0.12]} rotation={[0, 0, Math.PI / 2]}>
         <capsuleGeometry
           args={[
             facial === 'smile' ? 0.007 : facial === 'questioning' ? 0.008 : 0.005,
             facial === 'smile' ? 0.04 : 0.025,
-            4, 8,
+            6, 12,
           ]}
         />
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color={facial === 'smile' ? '#c0392b' : facial === 'sad' ? '#7f8c8d' : '#b5706a'}
+          roughness={0.35}
+          clearcoat={0.3}
         />
       </mesh>
-      {/* Lips */}
+      {/* Lips – subtle lower lip */}
+      <mesh material={lipMat} position={[0, -0.065, 0.118]}>
+        <capsuleGeometry args={[0.005, 0.022, 6, 10]} />
+      </mesh>
       {facial === 'smile' && (
-        <mesh position={[0, -0.065, 0.118]} rotation={[0, 0, Math.PI / 2]}>
-          <torusGeometry args={[0.018, 0.004, 6, 12, Math.PI]} />
+        <mesh position={[0, -0.065, 0.117]} rotation={[0, 0, Math.PI / 2]}>
+          <torusGeometry args={[0.018, 0.004, 8, 16, Math.PI]} />
           <meshStandardMaterial color="#c0392b" />
         </mesh>
       )}
 
-      {/* Ears */}
+      {/* ---- Ears ---- */}
       <group position={[-0.14, 0, 0]}>
-        <mesh>
-          <sphereGeometry args={[0.025, 8, 8]} />
-          <meshStandardMaterial color="#e8b08a" roughness={0.6} />
+        <mesh material={skin}>
+          <sphereGeometry args={[0.025, 12, 12]} />
         </mesh>
         <mesh position={[0.005, 0, 0]}>
-          <torusGeometry args={[0.015, 0.004, 6, 8, Math.PI]} />
+          <torusGeometry args={[0.015, 0.004, 8, 12, Math.PI]} />
           <meshStandardMaterial color="#d4946e" />
         </mesh>
       </group>
       <group position={[0.14, 0, 0]} rotation={[0, Math.PI, 0]}>
-        <mesh>
-          <sphereGeometry args={[0.025, 8, 8]} />
-          <meshStandardMaterial color="#e8b08a" roughness={0.6} />
+        <mesh material={skin}>
+          <sphereGeometry args={[0.025, 12, 12]} />
         </mesh>
         <mesh position={[0.005, 0, 0]}>
-          <torusGeometry args={[0.015, 0.004, 6, 8, Math.PI]} />
+          <torusGeometry args={[0.015, 0.004, 8, 12, Math.PI]} />
           <meshStandardMaterial color="#d4946e" />
         </mesh>
       </group>
@@ -347,17 +375,17 @@ function Head({ facial }: { facial: string }) {
 /* ===================== TORSO ===================== */
 function Torso({ color }: { color: string }) {
   const mat = useBodyMaterial(color);
-
   return (
     <group position={[0, 0.35, 0]}>
       <mesh material={mat}>
-        <boxGeometry args={[0.4, 0.35, 0.2]} />
+        <capsuleGeometry args={[0.16, 0.15, 8, 16]} />
       </mesh>
-      <mesh material={mat} position={[0, -0.22, 0]}>
-        <boxGeometry args={[0.32, 0.12, 0.18]} />
+      <mesh material={mat} position={[0, -0.2, 0]}>
+        <capsuleGeometry args={[0.12, 0.08, 8, 16]} />
       </mesh>
-      <mesh position={[0, 0.18, 0.08]}>
-        <torusGeometry args={[0.06, 0.012, 8, 16, Math.PI]} />
+      {/* Collar */}
+      <mesh position={[0, 0.16, 0.06]}>
+        <torusGeometry args={[0.06, 0.012, 8, 20, Math.PI]} />
         <meshStandardMaterial color="#1a1a2e" roughness={0.5} />
       </mesh>
     </group>
@@ -368,23 +396,23 @@ function Torso({ color }: { color: string }) {
 function Legs() {
   const mat = useBodyMaterial('#1a1a2e');
   const shoeMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#2c2c3e', roughness: 0.4, metalness: 0.2 }),
+    () => new THREE.MeshPhysicalMaterial({ color: '#2c2c3e', roughness: 0.35, metalness: 0.15, clearcoat: 0.2 }),
     []
   );
 
   return (
     <group position={[0, -0.05, 0]}>
       <mesh material={mat} position={[-0.09, -0.15, 0]}>
-        <capsuleGeometry args={[0.05, 0.25, 6, 12]} />
+        <capsuleGeometry args={[0.05, 0.25, 8, 16]} />
       </mesh>
       <mesh material={shoeMat} position={[-0.09, -0.35, 0.02]}>
-        <boxGeometry args={[0.08, 0.06, 0.12]} />
+        <capsuleGeometry args={[0.035, 0.04, 6, 12]} />
       </mesh>
       <mesh material={mat} position={[0.09, -0.15, 0]}>
-        <capsuleGeometry args={[0.05, 0.25, 6, 12]} />
+        <capsuleGeometry args={[0.05, 0.25, 8, 16]} />
       </mesh>
       <mesh material={shoeMat} position={[0.09, -0.35, 0.02]}>
-        <boxGeometry args={[0.08, 0.06, 0.12]} />
+        <capsuleGeometry args={[0.035, 0.04, 6, 12]} />
       </mesh>
     </group>
   );
@@ -397,7 +425,11 @@ export default function HumanoidAvatar({ pose, color = '#00b4d8' }: AvatarProps)
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
-    groupRef.current.position.y = Math.sin(clock.elapsedTime * 1.2) * 0.005;
+    const t = clock.elapsedTime;
+    // Idle breathing / body sway
+    groupRef.current.position.y = Math.sin(t * 1.2) * 0.006 - 0.3;
+    groupRef.current.rotation.y = Math.sin(t * 0.3) * 0.015;
+    groupRef.current.rotation.z = Math.sin(t * 0.4) * 0.005;
   });
 
   return (
