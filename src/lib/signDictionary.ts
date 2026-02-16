@@ -730,7 +730,7 @@ export function getSign(word: string): SignPose {
     return getLetterPose(w);
   }
 
-  // 4. Fingerspelling fallback — return first letter pose
+  // 4. Fingerspelling fallback — return first letter pose as default
   return {
     ...FINGERSPELL_POSE,
     description: `Spell: ${word.toUpperCase()}`,
@@ -738,6 +738,12 @@ export function getSign(word: string): SignPose {
     method: 'fingerspelling',
     confidence: 1,
   };
+}
+
+/** Returns an array of letter poses for fingerspelling a whole word */
+export function getSpellingPoses(word: string): SignPose[] {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  return w.split('').map((ch) => getLetterPose(ch));
 }
 
 export function getKnownWords(): string[] {

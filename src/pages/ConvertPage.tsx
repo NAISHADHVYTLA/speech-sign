@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import AvatarViewer from '@/components/AvatarViewer';
-import { getSign, DEFAULT_POSE, type SignPose } from '@/lib/signDictionary';
+import { getSign, getSpellingPoses, DEFAULT_POSE, type SignPose } from '@/lib/signDictionary';
 import { Mic, MicOff, Trash2, Play, ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -80,9 +80,24 @@ export default function ConvertPage() {
       for (let i = 0; i < words.length; i++) {
         if (!animatingRef.current) break;
         setCurrentWordIdx(i);
+
         const sign = getSign(words[i]);
-        setCurrentPose(sign);
-        await new Promise((r) => setTimeout(r, pauseTime / animSpeed + 600));
+
+        // If it's a fingerspelling word (multi-letter), animate each letter
+        if (sign.method === 'fingerspelling' && words[i].replace(/[^a-zA-Z]/g, '').length > 1) {
+          const letterPoses = getSpellingPoses(words[i]);
+          for (let j = 0; j < letterPoses.length; j++) {
+            if (!animatingRef.current) break;
+            setCurrentPose({
+              ...letterPoses[j],
+              description: `Spell: ${words[i].toUpperCase()} → ${words[i][j]?.toUpperCase()}`,
+            });
+            await new Promise((r) => setTimeout(r, (pauseTime * 0.6) / animSpeed + 300));
+          }
+        } else {
+          setCurrentPose(sign);
+          await new Promise((r) => setTimeout(r, pauseTime / animSpeed + 600));
+        }
       }
 
       animatingRef.current = false;
