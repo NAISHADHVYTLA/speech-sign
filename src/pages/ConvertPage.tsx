@@ -135,7 +135,7 @@ export default function ConvertPage() {
       <nav className="flex items-center justify-between px-6 py-3 glass-panel">
         <Link to="/" className="flex items-center gap-2 text-primary font-display font-bold text-lg">
           <ChevronLeft className="w-5 h-5" />
-          Sign Kit
+          Sign Speech
         </Link>
         <span className="text-sm text-muted-foreground">Speech → Sign Language Converter</span>
       </nav>
